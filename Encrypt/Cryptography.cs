@@ -1,10 +1,7 @@
-﻿using System;
-using System.IO;
-using System.Linq;
-using System.Security.Cryptography;
+﻿using System.Security.Cryptography;
 using System.Text;
 
-namespace WpfApp1;
+namespace AES;
 
 public static class Cryptography
 {
