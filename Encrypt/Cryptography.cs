@@ -49,13 +49,16 @@ public static class Cryptography
     public static byte[] EncryptBytesToBytes_Aes(byte[] plainBytes, byte[] Key, byte[] IV)
     {
         // Check arguments.
-        if (plainBytes == null || plainBytes.Length <= 0)
+        if (plainBytes == null)
             throw new ArgumentNullException("plainBytes");
         if (Key == null || Key.Length <= 0)
             throw new ArgumentNullException("Key");
         if (IV == null || IV.Length <= 0)
             throw new ArgumentNullException("IV");
         byte[] encrypted;
+
+        if (plainBytes.Length <= 0)
+            return plainBytes;
 
         // Create an Aes object with the specified key and IV.
         using (Aes aesAlg = Aes.Create())
@@ -130,12 +133,15 @@ public static class Cryptography
     public static byte[] DecryptBytesFromBytes_Aes(byte[] cipherBytes, byte[] Key, byte[] IV)
     {
         // Check arguments.
-        if (cipherBytes == null || cipherBytes.Length <= 0)
+        if (cipherBytes == null )
             throw new ArgumentNullException("cipherBytes");
         if (Key == null || Key.Length <= 0)
             throw new ArgumentNullException("Key");
         if (IV == null || IV.Length <= 0)
             throw new ArgumentNullException("IV");
+
+        if (cipherBytes.Length <= 0)
+            return cipherBytes;
 
         // Declare the byte array used to hold the decrypted data.
         byte[] decryptedBytes = null;

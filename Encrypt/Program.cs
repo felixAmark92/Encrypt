@@ -1,4 +1,5 @@
 ﻿using System.IO;
+using System.Security.AccessControl;
 using System.Text;
 
 namespace AES;
@@ -89,8 +90,25 @@ internal class Program
         var directoryInfo = new DirectoryInfo(path);
         var files = directoryInfo.GetFiles().Where(f => !f.Attributes.HasFlag(FileAttributes.Hidden));
 
+
         foreach (var file in files)
         {
+            
+
+            
+            var attr = File.GetAttributes(file.FullName);
+
+            if ((attr & FileAttributes.ReadOnly) != 0)
+            {
+                Console.ForegroundColor = ConsoleColor.Yellow;
+                Console.WriteLine($"Can't encypt read-only file {file.FullName}. skipping");
+                Console.ResetColor();
+                continue;
+            }
+            Console.WriteLine($"Encrypting file: {file.FullName}");
+
+
+
             var iv = Cryptography.GenerateIV();
 
             var fileBytes = File.ReadAllBytes(file.FullName);
@@ -99,12 +117,12 @@ internal class Program
 
             var fileNameEncrypted = Cryptography.EncryptStringToBytes_Aes(file.Name, key, iv);
 
-            var fileNameHex = Convert.ToHexString(fileNameEncrypted);
+            var hiddenFileName = Base32.ToBase32String(fileNameEncrypted);
 
             File.WriteAllBytes(file.FullName, encryption);
-            File.Move(file.FullName, Path.Combine(path, fileNameHex));
+            File.Move(file.FullName, Path.Combine(path, hiddenFileName));
 
-            var ivFile = Path.Combine(path, fileNameHex + ".iv");
+            var ivFile = Path.Combine(path, hiddenFileName + ".iv");
 
             File.WriteAllBytes(ivFile, iv);
             File.SetAttributes(ivFile, FileAttributes.Hidden);
@@ -117,6 +135,15 @@ internal class Program
 
         foreach (var file in files)
         {
+
+            var attr = File.GetAttributes(file.FullName);
+
+            if ((attr & FileAttributes.ReadOnly) != 0)
+            {
+                continue;
+            }
+            Console.WriteLine($"Decrypting file {file.FullName}");
+            
             var ivFile = directoryInfo.GetFiles().Single(f => f.Name == file.Name + ".iv");
 
             var iv = File.ReadAllBytes(ivFile.FullName);
@@ -124,7 +151,7 @@ internal class Program
             var fileBytes = File.ReadAllBytes(file.FullName);
 
             var decryption = Cryptography.DecryptBytesFromBytes_Aes(fileBytes, key, iv);
-            var fileNameDecrypted = Cryptography.DecryptStringFromBytes_Aes(Convert.FromHexString(file.Name), key, iv);
+            var fileNameDecrypted = Cryptography.DecryptStringFromBytes_Aes(Base32.FromBase32String(file.Name), key, iv);
 
             File.WriteAllBytes(file.FullName, decryption);
             File.Move(file.FullName, Path.Combine(path, fileNameDecrypted));
@@ -145,7 +172,7 @@ internal class Program
 
             var directoryNameEncrypted = Cryptography.EncryptStringToBytes_Aes(directoryName, key, iv);
 
-            var directoryNameHex = Convert.ToHexString(directoryNameEncrypted);
+            var directoryNameHex = Base32.ToBase32String(directoryNameEncrypted);
 
             string parent = new DirectoryInfo(directory).Parent.FullName;
 
@@ -175,7 +202,7 @@ internal class Program
 
             var directoryName = dirInfo.Name;
 
-            var directoryNameDecrypted = Cryptography.DecryptStringFromBytes_Aes(Convert.FromHexString(directoryName), key, iv);
+            var directoryNameDecrypted = Cryptography.DecryptStringFromBytes_Aes(Base32.FromBase32String(directoryName), key, iv);
 
             string parent = new DirectoryInfo(directory).Parent.FullName;
 
